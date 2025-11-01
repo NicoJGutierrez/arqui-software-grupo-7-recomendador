@@ -1,0 +1,111 @@
+version: "3.9"
+
+services:
+  properties_db:
+    image: postgres:15
+    container_name: properties_db
+    restart: always
+    environment:
+      POSTGRES_USER: properties_user
+      POSTGRES_PASSWORD: properties_pass
+      POSTGRES_DB: properties_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  properties_api:
+    build:
+      context: .
+      dockerfile: API/Dockerfile
+    container_name: properties_api
+    restart: always
+    depends_on:
+      - properties_db
+    env_file:
+      - .env 
+    environment:
+      DATABASE_URL: postgresql://properties_user:properties_pass@properties_db:5432/properties_db
+      NEW_RELIC_CONFIG_FILE: /app/newrelic.ini
+    volumes:
+      - ./API:/app
+      - ./recommender_system:/app/recommender_system
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "
+      until pg_isready -h properties_db -p 5432; do
+        echo 'Waiting for PostgreSQL...';
+        sleep 2;
+      done;
+      newrelic-admin run-program uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # Redis broker para Celery
+  redis:
+    image: redis:6-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # Servicio maestro de recomendador (expone endpoints para crear/consultar jobs)
+  recommender_master:
+    build:
+      context: .
+      dockerfile: recommender_system/Dockerfile
+    container_name: recommender_master
+    restart: always
+    depends_on:
+      - properties_db
+      - properties_api
+      - redis
+    environment:
+      DATABASE_URL: postgresql://properties_user:properties_pass@properties_db:5432/properties_db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    volumes:
+      - ./recommender_system:/app/recommender_system
+      - ./API:/app/API
+    ports:
+      - "8100:8100"
+
+  # Worker Celery que procesa las tareas encoladas
+  celery_worker:
+    build:
+      context: .
+      dockerfile: recommender_system/Dockerfile
+    container_name: celery_worker
+    restart: always
+    depends_on:
+      - redis
+      - properties_db
+    environment:
+      DATABASE_URL: postgresql://properties_user:properties_pass@properties_db:5432/properties_db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    command: celery -A recommender_system.celery_app worker --loglevel=info
+
+  mqtt_subscriber:
+    build:
+      context: .
+      dockerfile: MQTT/Dockerfile
+    container_name: mqtt_subscriber
+    restart: always
+    depends_on:
+      - properties_api
+    environment:
+      API_URL: http://properties_api:8000
+      HOST: broker.iic2173.org
+      PORT: 9000
+      USER: students
+      PASSWORD: iic2173-2025-2-students
+      TOPIC: properties/info
+
+    command: python mqtt_subscriber.py
+
+    ports:
+      - "8001:8001"
+
+volumes:
+  postgres_data:
