@@ -29,24 +29,24 @@ def compute_recommendations(user_id: int, property_id: int, job_id: int = None, 
 
     # buscar propiedad origen en la lista
     origen = next(
-        (p for p in all_properties if p.get("id") == property_id), None)
+        (p for p in all_properties if p.get("external_id") == property_id), None)
     if not origen:
         return "error: property not found"
 
     # filtrar candidatos
     candidates = [p for p in all_properties if
-                  # p.get("comuna") == origen.get("comuna") and
-                  # p.get("bedrooms") == origen.get("bedrooms") and
+                  p.get("comuna") == origen.get("comuna") and
+                  p.get("bedrooms") == origen.get("bedrooms") and
                   (p.get("price") is not None and origen.get("price") is not None and p.get("price") <= origen.get("price")) and
-                  p.get("id") != origen.get("id")]
+                  p.get("external_id") != origen.get("external_id")]
 
     scored = []
     for p in candidates:
-        # sólo admitir 'latitude'/'longitude'
-        lat1 = origen.get("latitude")
-        lon1 = origen.get("longitude")
-        lat2 = p.get("latitude")
-        lon2 = p.get("longitude")
+        # usar 'lat'/'lon'
+        lat1 = origen.get("lat")
+        lon1 = origen.get("lon")
+        lat2 = p.get("lat")
+        lon2 = p.get("lon")
         if lat1 is None or lon1 is None or lat2 is None or lon2 is None:
             # si faltan coordenadas, omitimos para priorizar candidatos con coordenadas
             continue

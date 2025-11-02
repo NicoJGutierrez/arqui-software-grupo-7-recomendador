@@ -1,5 +1,4 @@
 from sqlalchemy import Column, Integer, String, Float
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.types import JSON as JSONType
 from .database import Base
 

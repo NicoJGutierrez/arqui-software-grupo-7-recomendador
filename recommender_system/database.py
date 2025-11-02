@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    # fallback to sqlite for local development if not provided
+    # fallback to sqlite for local development
     "sqlite:///./recommender.db",
 )
 
