@@ -2,9 +2,8 @@
 
 # Este script recibe un id de usuario y propiedad, y usando los parámetros de la propiedad, recomienda otras propiedades similares siguiendo el algoritmo a continuación:
 # 1. Obtener la comuna, ubicación geográfica, número de dormitorios y precio de la propiedad que se acaba de agendar.
-# 2. Deben filtrar, entre todas las propiedades de su sistema, por aquellas con el mismo número de dormitorios, que su precio no sea mayor al de la propiedad del paso 1, y que su parámetro comuna sea igual al de la propiedad recientemente agendada.
-# 3. Deben ordenar las propiedades según que tan cercanas son geográficamente a la propiedad recientemente agendada y según su precio de menor a mayor.
-# 4. Deben obtener las 3 primeras coincidencias, si no hay coincidencias se debe indicar.
+# 2. Usar KNN para encontrar las 3 propiedades más similares basadas en latitud, longitud y precio.
+# 3. Calcular distancia geográfica real para cada recomendación.
 
 # Esto se debe implementar mediante workers con celery, de modo que cuando se agende una propiedad para un usuario, se dispare un worker que realice esta recomendación y la almacene en una tabla de recomendaciones.
 

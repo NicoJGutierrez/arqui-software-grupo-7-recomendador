@@ -9,3 +9,5 @@ python-multipart==0.0.7
 pydantic==2.5.0
 celery==5.5.3
 redis>=7.0.0
+numpy==2.3.4
+scikit-learn==1.7.2
