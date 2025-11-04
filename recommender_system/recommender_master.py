@@ -91,9 +91,11 @@ def notify_property(payload: PropertyNotify):
 
     try:
         with SessionLocal() as session:
+            print("hay session")
             prop = session.query(Property).filter(
                 Property.external_id == payload.external_id).one_or_none()
             if prop is None:
+                print("creando propiedad")
                 prop = Property(
                     external_id=payload.external_id,
                     comuna=payload.comuna,
@@ -107,19 +109,20 @@ def notify_property(payload: PropertyNotify):
                 session.refresh(prop)
                 return {"status": "created", "id": prop.id}
             else:
+                print("actualizando propiedad")
                 # actualizar campos si vienen en el payload
                 if payload.comuna is not None:
-                    prop.comuna = payload.comuna
+                    setattr(prop, "comuna", payload.comuna)
                 if payload.lat is not None:
-                    prop.lat = payload.lat
+                    setattr(prop, "lat", payload.lat)
                 if payload.lon is not None:
-                    prop.lon = payload.lon
+                    setattr(prop, "lon", payload.lon)
                 if payload.bedrooms is not None:
-                    prop.bedrooms = payload.bedrooms
+                    setattr(prop, "bedrooms", payload.bedrooms)
                 if payload.price is not None:
-                    prop.price = payload.price
+                    setattr(prop, "price", payload.price)
                 if payload.raw is not None:
-                    prop.raw = payload.raw
+                    setattr(prop, "raw", payload.raw)
                 session.add(prop)
                 session.commit()
                 return {"status": "updated", "id": prop.id}
