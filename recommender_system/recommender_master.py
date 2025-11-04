@@ -22,6 +22,8 @@ from fastapi import APIRouter, HTTPException, FastAPI
 import sys
 import os
 from typing import Optional, List
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 # DB imports
 from recommender_system.database import SessionLocal, init_db
@@ -156,4 +158,18 @@ def get_all_properties():
 
 # Exponer la aplicación FastAPI para poder ejecutar este servicio por separado
 app = FastAPI(title="recommender-master")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    logger.error(
+        f"Validation error en {request.url}: {exc.errors()} - Body: {exc.body}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body}
+    )
+
 app.include_router(router)
