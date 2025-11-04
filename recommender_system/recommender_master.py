@@ -206,17 +206,13 @@ def get_all_properties():
 app = FastAPI(title="recommender-master")
 
 
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request, exc):
-    import logging
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-    logger.error(
-        f"Validation error en {request.url}: {exc.errors()} - Body: {exc.body}")
-    logger.error(f"Traceback: {traceback.format_exc()}")  # Agrega traceback
-    return JSONResponse(
-        status_code=422,
-        content={"detail": exc.errors(), "body": exc.body}
-    )
+@app.middleware("http")
+async def log_requests(request, call_next):
+    logger.info(
+        f"Request: {request.method} {request.url} - Headers: {dict(request.headers)}")
+    response = await call_next(request)
+    logger.info(
+        f"Response: {response.status_code} for {request.method} {request.url}")
+    return response
 
 app.include_router(router)
