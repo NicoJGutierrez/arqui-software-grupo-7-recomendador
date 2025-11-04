@@ -33,13 +33,11 @@ def compute_recommendations(user_id: int, property_id: int, job_id: Optional[int
     if not origen:
         return "error: property not found"
 
-    # filtrar candidatos por reglas de negocio
     origen_price = origen.get("price")
     origen_comuna = origen.get("comuna")
     candidates = []
     for p in all_properties:
-        if (p.get("external_id") != origen.get("external_id") and
-                p.get("comuna") == origen_comuna):
+        if (p.get("external_id") != origen.get("external_id")):
             candidates.append(p)
 
     if not candidates:
