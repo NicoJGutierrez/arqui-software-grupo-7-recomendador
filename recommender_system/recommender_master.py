@@ -101,7 +101,6 @@ def notify_property(payload: PropertyNotify):
                     lon=payload.lon,
                     bedrooms=payload.bedrooms,
                     price=payload.price,
-                    raw=payload.raw,
                 )
                 session.add(prop)
                 session.commit()
