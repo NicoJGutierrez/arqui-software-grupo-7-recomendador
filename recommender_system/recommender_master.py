@@ -176,6 +176,10 @@ def get_job(task_id: str):
     logger.info(f"Consultando estado de job con task_id={task_id}")
     try:
         result = celery_app.AsyncResult(task_id)
+        if result.result == "error: property not found":
+            logger.warning(f"No se encontró job con task_id={task_id}")
+            raise HTTPException(
+                status_code=404, detail="Property not found in recommender database")
         logger.info(
             f"Estado del job {task_id}: resultado={result.result}, status={result.status}")
         return {"ready": result.ready(), "status": result.status, "result": result.result}
