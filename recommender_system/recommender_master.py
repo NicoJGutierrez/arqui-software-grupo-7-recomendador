@@ -86,6 +86,12 @@ def notify_property(payload: PropertyNotify):
     - Si `external_id` coincide con una propiedad existente, se actualiza.
     - Si no existe, se crea un nuevo registro.
     """
+    # Agregar logging para depurar el payload recibido
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    logger.info(f"Payload recibido: {payload.dict()}")  # Loguea el payload validado
+    
     if payload.external_id is None:
         raise HTTPException(status_code=400, detail="external_id is required")
 
