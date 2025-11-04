@@ -64,6 +64,7 @@ def create_job(user_id: str, property_id: int):
     except Exception:
         # si falla la lectura de BD, dejamos all_props = [] y el worker podrá fallar/registrar
         all_props = []
+        print("Warning: no se pudo leer la base de datos local de propiedades.")
 
     # Encolar la tarea pasando las propiedades obtenidas
     async_result = compute_recommendations.apply_async(
