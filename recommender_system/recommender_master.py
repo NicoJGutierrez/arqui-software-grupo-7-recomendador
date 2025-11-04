@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, FastAPI
 import sys
 import os
-from typing import Optional, List
+from typing import Optional, List, Union
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 import re
@@ -77,9 +77,10 @@ class PropertyNotify(BaseModel):
     comuna: Optional[str]
     lat: Optional[float]
     lon: Optional[float]
-    bedrooms: Optional[int]
+    bedrooms: Optional[Union[int, str]]  # Permite int o str
     price: Optional[float]
-    raw: Optional[dict]
+    # Agrega default para evitar error de campo requerido
+    raw: Optional[dict] = None
 
 
 def parse_bedrooms(bedrooms_value):
