@@ -12,6 +12,7 @@
 # POST /job Recibe los datos necesarios para el pago y entrega un id del job creado
 # GET /heartbeat Indica si el servicio está operativo (devuelve true)
 
+import logging  # Agrega esta importación si no está
 from recommender_system.celery_app import app as celery_app
 from recommender_system.celery_config.tasks import compute_recommendations
 import json
@@ -50,27 +51,42 @@ except Exception:
     pass
 
 
+# Configura el logger al inicio del archivo
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 @router.post("/job/{user_id}/{property_id}")
 def create_job(user_id: str, property_id: int):
     """
     Encola la tarea de recomendación. Devuelve el task_id de Celery para seguimiento.
     """
+    logger.info(
+        f"Iniciando creación de job para user_id={user_id}, property_id={property_id}")
     # Obtener todas las propiedades desde la base de datos local
     all_props = []
     try:
         with SessionLocal() as session:
             props = session.query(Property).all()
             all_props = [p.to_dict() for p in props]
-    except Exception:
-        # si falla la lectura de BD, dejamos all_props = [] y el worker podrá fallar/registrar
+            logger.info(f"Obtenidas {len(all_props)} propiedades de la DB")
+    except Exception as e:
+        logger.error(f"Error al obtener propiedades de DB: {str(e)}")
         all_props = []
         print("Warning: no se pudo leer la base de datos local de propiedades.")
 
     # Encolar la tarea pasando las propiedades obtenidas
-    async_result = compute_recommendations.apply_async(
-        args=[user_id, property_id], kwargs={"all_properties": all_props}
-    )
-    return {"task_id": async_result.id, "status": async_result.status}
+    try:
+        async_result = compute_recommendations.apply_async(
+            args=[user_id, property_id], kwargs={"all_properties": all_props}
+        )
+        logger.info(
+            f"Job encolado exitosamente, task_id={async_result.id}, status={async_result.status}")
+        return {"task_id": async_result.id, "status": async_result.status}
+    except Exception as e:
+        logger.error(f"Error al encolar job: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error encolando job: {str(e)}")
 
 
 class PropertyNotify(BaseModel):
@@ -157,8 +173,16 @@ def notify_property(payload: PropertyNotify):
 @router.get("/job/{task_id}")
 def get_job(task_id: str):
     """Consulta el estado del task de Celery usando su id."""
-    result = celery_app.AsyncResult(task_id)
-    return {"ready": result.ready(), "status": result.status, "result": result.result}
+    logger.info(f"Consultando estado de job con task_id={task_id}")
+    try:
+        result = celery_app.AsyncResult(task_id)
+        logger.info(
+            f"Estado del job {task_id}: ready={result.ready()}, status={result.status}")
+        return {"ready": result.ready(), "status": result.status, "result": result.result}
+    except Exception as e:
+        logger.error(f"Error al consultar job {task_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error consultando job: {str(e)}")
 
 
 @router.get("/heartbeat")
