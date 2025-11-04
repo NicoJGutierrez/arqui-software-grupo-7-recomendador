@@ -177,7 +177,7 @@ def get_job(task_id: str):
     try:
         result = celery_app.AsyncResult(task_id)
         logger.info(
-            f"Estado del job {task_id}: ready={result.ready()}, status={result.status}")
+            f"Estado del job {task_id}: resultado={result}, status={result.status}")
         return {"ready": result.ready(), "status": result.status, "result": result.result}
     except Exception as e:
         logger.error(f"Error al consultar job {task_id}: {str(e)}")
