@@ -49,7 +49,7 @@ except Exception:
 
 
 @router.post("/job/{user_id}/{property_id}")
-def create_job(user_id: int, property_id: int):
+def create_job(user_id: str, property_id: int):
     """
     Encola la tarea de recomendación. Devuelve el task_id de Celery para seguimiento.
     """
