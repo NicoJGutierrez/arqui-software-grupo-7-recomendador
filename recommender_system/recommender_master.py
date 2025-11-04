@@ -25,6 +25,7 @@ from typing import Optional, List, Union
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 import re
+import traceback  # Agrega esta importación
 
 # DB imports
 from recommender_system.database import SessionLocal, init_db
@@ -103,9 +104,6 @@ def notify_property(payload: PropertyNotify):
     if payload.external_id is None:
         raise HTTPException(status_code=400, detail="external_id is required")
 
-    bedrooms_regex = re.compile(
-        r'^\s*(\d+)\s*(?:dormitorio[s]?|habitación[es]?|habitacion[es]?)\s*$', re.IGNORECASE)
-
     try:
         with SessionLocal() as session:
             print("hay session")
@@ -146,6 +144,12 @@ def notify_property(payload: PropertyNotify):
                 session.commit()
                 return {"status": "updated", "id": prop.id}
     except Exception as e:
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error en notify_property: {str(e)}")
+        # Agrega traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -184,6 +188,7 @@ async def validation_exception_handler(request, exc):
     logger = logging.getLogger(__name__)
     logger.error(
         f"Validation error en {request.url}: {exc.errors()} - Body: {exc.body}")
+    logger.error(f"Traceback: {traceback.format_exc()}")  # Agrega traceback
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors(), "body": exc.body}
