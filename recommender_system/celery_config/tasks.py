@@ -38,10 +38,7 @@ def compute_recommendations(user_id: int, property_id: int, job_id: Optional[int
     origen_comuna = origen.get("comuna")
     candidates = []
     for p in all_properties:
-        p_price = p.get("price")
-        if (p_price is not None and origen_price is not None and
-            p.get("external_id") != origen.get("external_id") and
-            p.get("lat") is not None and p.get("lon") is not None and
+        if (p.get("external_id") != origen.get("external_id") and
                 p.get("comuna") == origen_comuna):
             candidates.append(p)
 
@@ -52,12 +49,16 @@ def compute_recommendations(user_id: int, property_id: int, job_id: Optional[int
     # características: lat, lon, price
     features = []
     for p in candidates:
-        price = p.get("price") or 0  # default 0 if None
-        features.append([p["lat"], p["lon"], price])
+        lat = p.get("lat") or 0
+        lon = p.get("lon") or 0
+        price = p.get("price") or 0
+        features.append([lat, lon, price])
 
     # incluir la propiedad origen para calcular distancias
+    origen_lat = origen.get("lat") or 0
+    origen_lon = origen.get("lon") or 0
     origen_price = origen.get("price") or 0
-    origen_features = [[origen["lat"], origen["lon"], origen_price]]
+    origen_features = [[origen_lat, origen_lon, origen_price]]
     all_features = origen_features + features
 
     # convertir a numpy array
@@ -85,7 +86,7 @@ def compute_recommendations(user_id: int, property_id: int, job_id: Optional[int
         prop = candidates[idx - 1]
         # calcular distancia real usando haversine
         real_dist = haversine(
-            origen["lat"], origen["lon"], prop["lat"], prop["lon"])
+            origen_lat, origen_lon, prop["lat"], prop["lon"])
         result.append({
             "property": prop,
             "distance_km": real_dist,
