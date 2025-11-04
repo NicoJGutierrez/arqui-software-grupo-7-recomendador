@@ -24,6 +24,7 @@ import os
 from typing import Optional, List
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+import re
 
 # DB imports
 from recommender_system.database import SessionLocal, init_db
@@ -81,6 +82,16 @@ class PropertyNotify(BaseModel):
     raw: Optional[dict]
 
 
+def parse_bedrooms(bedrooms_value):
+    """Parsea bedrooms: extrae int de string (e.g., '1 dormitorio' -> 1), o devuelve int/None."""
+    if isinstance(bedrooms_value, str):
+        match = re.match(r'^(\d+)', bedrooms_value)  # Extrae dígitos al inicio
+        return int(match.group(1)) if match else None
+    elif isinstance(bedrooms_value, int):
+        return bedrooms_value
+    return None
+
+
 @router.post("/properties/notify")
 def notify_property(payload: PropertyNotify):
     """Endpoint para insertar/actualizar una propiedad cuando otra API notifica un cambio.
@@ -91,6 +102,9 @@ def notify_property(payload: PropertyNotify):
     if payload.external_id is None:
         raise HTTPException(status_code=400, detail="external_id is required")
 
+    bedrooms_regex = re.compile(
+        r'^\s*(\d+)\s*(?:dormitorio[s]?|habitación[es]?|habitacion[es]?)\s*$', re.IGNORECASE)
+
     try:
         with SessionLocal() as session:
             print("hay session")
@@ -98,12 +112,13 @@ def notify_property(payload: PropertyNotify):
                 Property.external_id == payload.external_id).one_or_none()
             if prop is None:
                 print("creando propiedad")
+                parsed_bedrooms = parse_bedrooms(payload.bedrooms)
                 prop = Property(
                     external_id=payload.external_id,
                     comuna=payload.comuna,
                     lat=payload.lat,
                     lon=payload.lon,
-                    bedrooms=payload.bedrooms,
+                    bedrooms=parsed_bedrooms,
                     price=payload.price,
                 )
                 session.add(prop)
@@ -119,8 +134,9 @@ def notify_property(payload: PropertyNotify):
                     setattr(prop, "lat", payload.lat)
                 if payload.lon is not None:
                     setattr(prop, "lon", payload.lon)
-                if payload.bedrooms is not None:
-                    setattr(prop, "bedrooms", payload.bedrooms)
+                parsed_bedrooms = parse_bedrooms(payload.bedrooms)
+                if parsed_bedrooms is not None:
+                    setattr(prop, "bedrooms", parsed_bedrooms)
                 if payload.price is not None:
                     setattr(prop, "price", payload.price)
                 if payload.raw is not None:
