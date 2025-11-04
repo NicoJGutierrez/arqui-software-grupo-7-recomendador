@@ -42,7 +42,7 @@ def compute_recommendations(user_id: int, property_id: int, job_id: Optional[int
         if (p_price is not None and origen_price is not None and
             p.get("external_id") != origen.get("external_id") and
             p.get("lat") is not None and p.get("lon") is not None and
-            p.get("comuna") == origen_comuna):
+                p.get("comuna") == origen_comuna):
             candidates.append(p)
 
     if not candidates:
@@ -92,4 +92,6 @@ def compute_recommendations(user_id: int, property_id: int, job_id: Optional[int
             "knn_distance": dist
         })
 
+    print(
+        f"Recomendaciones para user_id={user_id}, property_id={property_id}: {result}")
     return result
